@@ -75,11 +75,11 @@ func main() {
 		}
 
 		// Execute user command
-		executeCommand(input)
+		executeCommand(input, helperAgent)
 	}
 }
 
-func executeCommand(input string) {
+func executeCommand(input string, agent *ai.Agent) {
 	lastCmd = input
 
 	// using 'sh -c' to support pipes and redirects typed by user
@@ -103,6 +103,23 @@ func executeCommand(input string) {
 	}
 
 	lastOutput = outBuf.String()
+
+	if err != nil && strings.Contains(strings.ToLower(lastOutput), "command not found") {
+		fmt.Println("\n🤖 Command not found! Asking AI to rewrite it...")
+		fixedCmd, aiErr := agent.RewriteCommand(context.Background(), input)
+		if aiErr == nil && fixedCmd != "" {
+			fmt.Printf("✨ Did you mean: `%s`\n", fixedCmd)
+			fmt.Print("Execute this command? [Y/n]: ")
+			
+			reader := bufio.NewReader(os.Stdin)
+			ans, _ := reader.ReadString('\n')
+			ans = strings.TrimSpace(strings.ToLower(ans))
+			
+			if ans == "" || ans == "y" || ans == "yes" {
+				executeCommand(fixedCmd, agent)
+			}
+		}
+	}
 }
 
 func handleMenuAction(res ui.MenuResult, agent *ai.Agent) {
@@ -182,7 +199,7 @@ func handleMenuAction(res ui.MenuResult, agent *ai.Agent) {
 	case ui.ActionBuild:
 		if res.BuildCmd != "" {
 			fmt.Printf("\nBuilding code: %s\n", res.BuildCmd)
-			executeCommand(res.BuildCmd)
+			executeCommand(res.BuildCmd, agent)
 		}
 	}
 }

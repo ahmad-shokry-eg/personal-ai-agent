@@ -4,7 +4,15 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss"
+)
+
+var (
+	titleStyle    = lipgloss.NewStyle().Margin(1, 0, 1, 0).Foreground(lipgloss.Color("#FF7CCB")).Bold(true)
+	selectedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00D7FF")).Bold(true).PaddingLeft(2)
+	normalStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")).PaddingLeft(4)
+	helpStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).MarginTop(1)
 )
 
 type ActionType int
@@ -118,34 +126,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	if m.quitting {
-		return ""
+		return tea.NewView("")
 	}
 
-	s := "Select an action:\n\n"
+	var s string
 	
 	if m.submenu {
-		s = "Select build command (ESC to go back):\n\n"
+		s += titleStyle.Render("Select build command (ESC to go back):") + "\n"
 		for i, choice := range m.subopts {
-			cursor := " "
 			if m.subcur == i {
-				cursor = ">"
+				s += selectedStyle.Render("▶ " + choice) + "\n"
+			} else {
+				s += normalStyle.Render(choice) + "\n"
 			}
-			s += fmt.Sprintf("%s %s\n", cursor, choice)
 		}
 	} else {
+		s += titleStyle.Render("Select an action:") + "\n"
 		for i, choice := range m.choices {
-			cursor := " "
 			if m.cursor == i {
-				cursor = ">"
+				s += selectedStyle.Render("▶ " + choice) + "\n"
+			} else {
+				s += normalStyle.Render(choice) + "\n"
 			}
-			s += fmt.Sprintf("%s %s\n", cursor, choice)
 		}
 	}
 
-	s += "\nPress j/k or up/down to move, enter to select, esc/q to quit.\n"
-	return s
+	s += helpStyle.Render("Press j/k or up/down to move, enter to select, esc/q to quit.") + "\n"
+	return tea.NewView(s)
 }
 
 // ShowMenu runs the Bubble Tea UI and returns the user's selection
